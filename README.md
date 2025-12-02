@@ -43,6 +43,7 @@ Available Commands:
   add         Add track by name to playlist
   aid         Add track by ID to playlist
   ato         Add currently playing track to playlist
+  clear       Remove all tracks from a playlist
   del         Delete a playlist
   help        Help about any command
   list        List tracks in playlist
@@ -80,4 +81,24 @@ Flags:
 Sample search for type `tr` (track).
 ```
 ./spotifycli search --t "tr" --q "one step closer - live"
+```
+
+### Clear Playlist
+Remove all tracks from a playlist while keeping the playlist itself.
+
+```
+./spotifycli clear --help
+Remove all tracks from a playlist
+
+Usage:
+  spotifycli clear --p [PLAYLIST_NAME] [flags]
+
+Flags:
+  -h, --help         help for clear
+      --p string     Name of playlist to clear.
+```
+
+Sample usage:
+```
+./spotifycli clear --p "My Playlist"
 ```

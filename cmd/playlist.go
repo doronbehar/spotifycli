@@ -45,6 +45,10 @@ var (
 )
 
 var (
+	clearPlaylistName string
+)
+
+var (
 	listPlaylistTracksName string
 )
 
@@ -192,6 +196,18 @@ func newDeletePlaylistCmd() *cobra.Command {
 	}
 	deleteCmd.Flags().StringVar(&delPlaylistName, "p", "", "Name of playlist to delete.")
 	return deleteCmd
+}
+
+func newClearPlaylistCmd() *cobra.Command {
+	clearCmd := &cobra.Command{
+		Use:   "clear --p [PLAYLIST_NAME]",
+		Short: "Remove all tracks from a playlist",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return clearPlaylist(cmd, args)
+		},
+	}
+	clearCmd.Flags().StringVar(&clearPlaylistName, "p", "", "Name of playlist to clear.")
+	return clearCmd
 }
 
 func newListPlaylistTracksCmd() *cobra.Command {
@@ -373,6 +389,48 @@ func deletePlaylist(cmd *cobra.Command, args []string) error {
 	// unfollow and return
 	// TODO: delete != unfollow?
 	return client.UnfollowPlaylist(spotify.ID(user.ID), pl.ID)
+}
+
+func clearPlaylist(cmd *cobra.Command, args []string) error {
+	// current user
+	user, err := client.CurrentUser()
+	if err != nil {
+		return err
+	}
+	fmt.Println("User: ", user.DisplayName)
+
+	// get the playlist
+	pl, err := getPlaylistByName(clearPlaylistName)
+	if err != nil {
+		return err
+	}
+	fmt.Println("Playlist: ", pl.Name)
+
+	// get all tracks from the playlist
+	tracks, err := client.GetPlaylistTracks(pl.ID)
+	if err != nil {
+		return err
+	}
+
+	if len(tracks.Tracks) == 0 {
+		fmt.Println("Playlist is already empty.")
+		return nil
+	}
+
+	// collect all track IDs
+	var trackIDs []spotify.ID
+	for _, t := range tracks.Tracks {
+		trackIDs = append(trackIDs, t.Track.ID)
+	}
+
+	// remove all tracks from the playlist
+	_, err = client.RemoveTracksFromPlaylist(pl.ID, trackIDs...)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Removed %d track(s) from playlist \"%s\".\n", len(trackIDs), pl.Name)
+	return nil
 }
 
 func addTrackByIDToPlaylist(cmd *cobra.Command, args []string) error {
