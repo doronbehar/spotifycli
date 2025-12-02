@@ -6,12 +6,19 @@ A command line interface to manage Spotify playlists.
 
 ## Install
 
-To use `spotifycli` you have to register the application on Spotify's developer platform. Sign up or login available [here](https://beta.developer.spotify.com/dashboard/login). Set the following environment variables with the client Id and secret.
+To use `spotifycli` you have to register the application on Spotify's developer platform:
 
-```
-export SPOTIFY_ID=xxx
-export SPOTIFY_SECRET=xxx
-```
+1. Sign up or login at [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
+2. Create a new app
+3. In your app settings, add the following **Redirect URI** (note: use `127.0.0.1` not `localhost`):
+   ```
+   http://127.0.0.1:8080/callback
+   ```
+4. Set the following environment variables with your app's Client ID and Client Secret:
+   ```bash
+   export SPOTIFY_ID=xxx
+   export SPOTIFY_SECRET=xxx
+   ```
 
 ## Usage
 

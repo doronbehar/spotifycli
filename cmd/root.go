@@ -15,7 +15,7 @@ import (
 
 const (
 	tokenFile   = ".sptok"
-	redirectURI = "http://localhost:8080/callback"
+	redirectURI = "http://127.0.0.1:8080/callback"
 )
 
 var (
