@@ -53,6 +53,18 @@ func NewRootCmd() *cobra.Command {
 }
 
 func prerun(cmd *cobra.Command, args []string) {
+	// Commands that don't need any authentication setup
+	if cmd.Parent() != nil {
+		parentName := cmd.Parent().Name()
+		ourName := cmd.Name()
+		if parentName == "spotifycli" && (ourName == "completion" || ourName == "help") {
+			return
+		}
+		if parentName == "completion" || parentName == "help" {
+			return
+		}
+	}
+
 	// check for required environment variables
 	spotifyID := os.Getenv("SPOTIFY_ID")
 	spotifySecret := os.Getenv("SPOTIFY_SECRET")
@@ -71,9 +83,12 @@ func prerun(cmd *cobra.Command, args []string) {
 		spotify.ScopePlaylistModifyPublic)
 	auth.SetAuthInfo(spotifyID, spotifySecret)
 
-	// exit early
-	if cmd.Use == "login" || cmd.Use == "logout" {
-		return
+	// exit early for login and logout (they need auth setup but not token)
+	if cmd.Parent() != nil && cmd.Parent().Name() == "spotifycli" {
+		ourName := cmd.Name()
+		if ourName == "login" || ourName == "logout" {
+			return
+		}
 	}
 
 	// get token
@@ -87,9 +102,16 @@ func prerun(cmd *cobra.Command, args []string) {
 }
 
 func postrun(cmd *cobra.Command, args []string) {
-	// exit early
-	if cmd.Use == "login" || cmd.Use == "logout" {
-		return
+	// Commands that don't need token refresh
+	if cmd.Parent() != nil {
+		parentName := cmd.Parent().Name()
+		ourName := cmd.Name()
+		if parentName == "spotifycli" && (ourName == "login" || ourName == "logout" || ourName == "completion" || ourName == "help") {
+			return
+		}
+		if parentName == "completion" || parentName == "help" {
+			return
+		}
 	}
 
 	// refresh token
