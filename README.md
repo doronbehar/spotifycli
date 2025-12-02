@@ -4,6 +4,14 @@
 
 A command line interface to manage Spotify playlists.
 
+## Build
+
+Build the project using:
+
+```bash
+CGO_ENABLED=0 go build
+```
+
 ## Install
 
 To use `spotifycli` you have to register the application on Spotify's developer platform:
