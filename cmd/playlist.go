@@ -2,9 +2,11 @@ package cmd
 
 import (
 	"fmt"
+	"net/url"
 	"reflect"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -45,6 +47,43 @@ var (
 var (
 	listPlaylistTracksName string
 )
+
+// isBase62 checks if a string contains only valid base62 characters (0-9, a-z, A-Z)
+func isBase62(s string) bool {
+	if len(s) == 0 {
+		return false
+	}
+	for _, c := range s {
+		if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) {
+			return false
+		}
+	}
+	return true
+}
+
+// parseTrackID extracts a Spotify track ID from either a URL or a plain ID string.
+// If the input is a Spotify URL (e.g., https://open.spotify.com/track/2b7VhCSKWZAFDrDPKTJ1z2?si=xyz),
+// it extracts the track ID from the path. Otherwise, it returns the input as-is.
+func parseTrackID(input string) (string, error) {
+	// Check if input looks like a URL
+	if strings.Contains(input, "spotify.com") {
+		parsedURL, err := url.Parse(input)
+		if err != nil {
+			return "", fmt.Errorf("invalid URL: %w", err)
+		}
+
+		// Extract track ID from path (e.g., /track/2b7VhCSKWZAFDrDPKTJ1z2)
+		parts := strings.Split(strings.Trim(parsedURL.Path, "/"), "/")
+		if len(parts) >= 2 && parts[0] == "track" {
+			return parts[1], nil
+		}
+
+		return "", fmt.Errorf("URL does not contain a valid track path")
+	}
+
+	// Return input as-is if it's not a URL
+	return input, nil
+}
 
 func newCurrentTrackCmd() *cobra.Command {
 	nowCmd := &cobra.Command{
@@ -109,13 +148,13 @@ func newAddTrackByNameToPlaylistCmd() *cobra.Command {
 
 func newRemoveTrackFromPlaylistCmd() *cobra.Command {
 	rmCmd := &cobra.Command{
-		Use:   "rm --t [TRACK_NAME] --p [PLAYLIST_NAME]",
-		Short: "Remove track from playlist",
+		Use:   "rm --t [TRACK_NAME|TRACK_ID|TRACK_URL] --p [PLAYLIST_NAME]",
+		Short: "Remove track from playlist by name, ID, or URL",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return rmTrackByNameFromPlaylist(cmd, args)
 		},
 	}
-	rmCmd.Flags().StringVar(&rmTrackName, "t", "", "Name of track to remove.")
+	rmCmd.Flags().StringVar(&rmTrackName, "t", "", "Name, ID, or URL of track to remove.")
 	rmCmd.Flags().StringVar(&rmTrackFromPlaylistName, "p", "", "Name of playlist to remove track from.")
 	return rmCmd
 }
@@ -197,8 +236,14 @@ func displayTrackById(cmd *cobra.Command, args []string) error {
 	}
 	fmt.Println("User: ", user.DisplayName)
 
+	// parse track ID from URL or plain ID
+	parsedTrackID, err := parseTrackID(trackID)
+	if err != nil {
+		return err
+	}
+
 	// get the track (check for existence)
-	track, err := client.GetTrack(spotify.ID(trackID))
+	track, err := client.GetTrack(spotify.ID(parsedTrackID))
 	if err != nil {
 		return err
 	}
@@ -345,8 +390,14 @@ func addTrackByIDToPlaylist(cmd *cobra.Command, args []string) error {
 	}
 	fmt.Println("Playlist: ", pl.Name)
 
+	// parse track ID from URL or plain ID
+	parsedTrackID, err := parseTrackID(addTrackID)
+	if err != nil {
+		return err
+	}
+
 	// get the track (check for existence)
-	tr, err := client.GetTrack(spotify.ID(addTrackID))
+	tr, err := client.GetTrack(spotify.ID(parsedTrackID))
 	if err != nil {
 		return err
 	}
@@ -417,10 +468,28 @@ func rmTrackByNameFromPlaylist(cmd *cobra.Command, args []string) error {
 	// get track in playlist and validate existence
 	var matchedTrack spotify.SimpleTrack
 	ptracks, err := client.GetPlaylistTracks(pl.ID)
+	if err != nil {
+		return err
+	}
+
+	// Check if input is a URL/ID or a track name
+	parsedTrackID, parseErr := parseTrackID(rmTrackName)
+	isIDOrURL := parseErr == nil && (strings.Contains(rmTrackName, "spotify.com") || isBase62(rmTrackName))
+
+	// Search for track by ID or name
 	for _, t := range ptracks.Tracks {
-		if rmTrackName == t.Track.SimpleTrack.Name {
-			matchedTrack = t.Track.SimpleTrack
-			break
+		if isIDOrURL {
+			// Match by ID
+			if string(t.Track.SimpleTrack.ID) == parsedTrackID {
+				matchedTrack = t.Track.SimpleTrack
+				break
+			}
+		} else {
+			// Match by name
+			if rmTrackName == t.Track.SimpleTrack.Name {
+				matchedTrack = t.Track.SimpleTrack
+				break
+			}
 		}
 	}
 	if reflect.DeepEqual(matchedTrack, spotify.SimpleTrack{}) {
