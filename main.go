@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/masroorhasan/spotifycli/cmd"
+	"github.com/doronbehar/spotifycli/cmd"
 )
 
 func main() {

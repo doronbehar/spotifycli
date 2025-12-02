@@ -248,7 +248,7 @@ func addto(cmd *cobra.Command, args []string) error {
 	fmt.Println("Track: ", playing.Item.Name)
 
 	// add track to playlist
-	_, err = client.AddTracksToPlaylist(user.ID, pl.ID, playing.Item.ID)
+	_, err = client.AddTracksToPlaylist(spotify.ID(user.ID), pl.ID, playing.Item.ID)
 	if err != nil {
 		return err
 	}
@@ -303,7 +303,7 @@ func newPlaylist(cmd *cobra.Command, args []string) error {
 	fmt.Println("User: ", user.DisplayName)
 
 	// create new playlist
-	playlist, err := client.CreatePlaylistForUser(user.ID, newPlaylistName, true)
+	playlist, err := client.CreatePlaylistForUser(user.ID, newPlaylistName, "", true)
 	if err != nil {
 		return err
 	}
@@ -353,7 +353,7 @@ func addTrackByIDToPlaylist(cmd *cobra.Command, args []string) error {
 	fmt.Println("Track: ", tr.Name)
 
 	// add track to playlist
-	_, err = client.AddTracksToPlaylist(user.ID, pl.ID, tr.ID)
+	_, err = client.AddTracksToPlaylist(spotify.ID(user.ID), pl.ID, tr.ID)
 	if err != nil {
 		return err
 	}
@@ -389,7 +389,7 @@ func addTrackByNameToPlaylist(cmd *cobra.Command, args []string) error {
 		fmt.Println("Track: ", tracks[0].Name)
 
 		// add track to playlist
-		_, err = client.AddTracksToPlaylist(user.ID, pl.ID, tracks[0].ID)
+		_, err = client.AddTracksToPlaylist(spotify.ID(user.ID), pl.ID, tracks[0].ID)
 		if err != nil {
 			return err
 		}
@@ -416,7 +416,7 @@ func rmTrackByNameFromPlaylist(cmd *cobra.Command, args []string) error {
 
 	// get track in playlist and validate existence
 	var matchedTrack spotify.SimpleTrack
-	ptracks, err := client.GetPlaylistTracks(user.ID, pl.ID)
+	ptracks, err := client.GetPlaylistTracks(pl.ID)
 	for _, t := range ptracks.Tracks {
 		if rmTrackName == t.Track.SimpleTrack.Name {
 			matchedTrack = t.Track.SimpleTrack
@@ -429,7 +429,7 @@ func rmTrackByNameFromPlaylist(cmd *cobra.Command, args []string) error {
 	fmt.Println("Track: ", matchedTrack.Name)
 
 	// remove track from playlist
-	_, err = client.RemoveTracksFromPlaylist(user.ID, pl.ID, matchedTrack.ID)
+	_, err = client.RemoveTracksFromPlaylist(spotify.ID(user.ID), pl.ID, matchedTrack.ID)
 	if err != nil {
 		return err
 	}
@@ -451,7 +451,7 @@ func listTracksFromPlaylist(cmd *cobra.Command, args []string) error {
 	}
 
 	// get tracks from playlist
-	tracks, err := client.GetPlaylistTracks(user.ID, pl.ID)
+	tracks, err := client.GetPlaylistTracks(pl.ID)
 	if err != nil {
 		return err
 	}
