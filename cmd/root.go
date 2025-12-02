@@ -53,6 +53,14 @@ func NewRootCmd() *cobra.Command {
 }
 
 func prerun(cmd *cobra.Command, args []string) {
+	// check for required environment variables
+	spotifyID := os.Getenv("SPOTIFY_ID")
+	spotifySecret := os.Getenv("SPOTIFY_SECRET")
+	if spotifyID == "" || spotifySecret == "" {
+		log.Fatal("Error: SPOTIFY_ID and SPOTIFY_SECRET environment variables must be set.\n" +
+			"Please set them with your Spotify application credentials from https://developer.spotify.com/dashboard")
+	}
+
 	// initialize authenticator
 	auth = spotify.NewAuthenticator(
 		redirectURI,
@@ -61,7 +69,7 @@ func prerun(cmd *cobra.Command, args []string) {
 		spotify.ScopePlaylistReadCollaborative,
 		spotify.ScopePlaylistModifyPrivate,
 		spotify.ScopePlaylistModifyPublic)
-	auth.SetAuthInfo(os.Getenv("SPOTIFY_ID"), os.Getenv("SPOTIFY_SECRET"))
+	auth.SetAuthInfo(spotifyID, spotifySecret)
 
 	// exit early
 	if cmd.Use == "login" || cmd.Use == "logout" {
